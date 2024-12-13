@@ -1,4 +1,4 @@
-module magpie/hello
+module magpie/rook
 
 go 1.23.2
 
