@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
@@ -10,11 +11,16 @@ import (
 )
 
 func main() {
+	// Define command line flags
+	username := flag.String("username", "foo", "MQTT username")
+	password := flag.String("password", "bar", "MQTT password")
+	flag.Parse()
+
 	opts := MQTT.NewClientOptions().AddBroker("tcp://homeassistant.local:1883")
 	opts.SetClientID("go_mqtt_client")
 	opts.SetDefaultPublishHandler(messagePubHandler)
-	opts.SetUsername("mqtt")
-	opts.SetPassword("mqtt")
+	opts.SetUsername(*username)
+	opts.SetPassword(*password)
 
 	client := MQTT.NewClient(opts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
