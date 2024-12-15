@@ -22,12 +22,23 @@ type Payload struct {
 	// Add more fields as needed
 }
 
+type Status struct {
+	Status string `json:"status"`
+}
+
+type Context struct {
+	MessageCount int
+}
+
+var context *Context
+
 // https://gorilla.github.io/
 // https://github.com/samber/lo
 // https://github.com/gin-gonic/gin - need so we can front w/ envoy
 // https://github.com/avelino/awesome-go
 
 func main() {
+	context = &Context{MessageCount: 0}
 	username := flag.String("username", "foo", "MQTT username")
 	password := flag.String("password", "bar", "MQTT password")
 	flag.Parse()
@@ -67,19 +78,31 @@ func main() {
 
 func startHTTPServer() {
 	r := mux.NewRouter()
+
 	r.HandleFunc("/status", statusHandler).Methods("GET")
+	r.HandleFunc("/", indexHandler).Methods("GET")
 	http.Handle("/", r)
 	http.ListenAndServe(":8080", nil)
 }
 
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	// w.Header().Set("Content-Type", "application/text")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "Message Count %d", context.MessageCount)
+}
+
 func statusHandler(w http.ResponseWriter, r *http.Request) {
+	var status Status
+	status.Status = "ok"
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+	// json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+	json.NewEncoder(w).Encode(status)
 }
 
 var messagePubHandler MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
 	fmt.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
+	context.MessageCount++
 
 	// Parse the JSON payload
 	var payload Payload
