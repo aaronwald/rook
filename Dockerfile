@@ -5,6 +5,6 @@ RUN go mod download
 COPY . .
 RUN go build -o rook .
 
-FROM debian:bullseye-slim
+FROM golang:1.23
 COPY --from=builder /app/rook /app/rook
-CMD ["/app/rook",  "/etc/gmail-secret/username", "/etc/gmail-secret/password"]
+CMD ["/app/rook",  "-gmail_username_file", "/etc/gmail-secret/username", "-gmail_password_file", "/etc/gmail-secret/password", "-mqtt_server", "mqtt", "-username", "rook", "-password", "rook"]
