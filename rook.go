@@ -45,6 +45,7 @@ type Context struct {
 
 var context *Context
 
+// slog
 // https://github.com/avelino/awesome-go
 // https://gobyexample.com/
 
