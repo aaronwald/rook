@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"net/smtp"
 	"os"
@@ -59,6 +60,11 @@ func main() {
 	gmail_password_file := flag.String("gmail_password_file", "gmail_password.txt", "Gmail password file")
 	flag.Parse()
 
+	slog.Info("mqtt", "mqtt_server", *mqtt_hostname)
+	slog.Info("mqtt", "mqtt_port", *mqtt_port)
+	slog.Info("gmail", "gmail_username_file", *gmail_username_file)
+	slog.Info("gmail", "gmail_password_file", *gmail_password_file)
+
 	dat, err := os.ReadFile(*gmail_username_file)
 	if err != nil {
 		panic(err)
@@ -75,7 +81,7 @@ func main() {
 
 	hostname, err := os.Hostname()
 	if err != nil {
-		fmt.Println(err)
+		slog.Any("error", err)
 		os.Exit(1)
 	}
 
@@ -87,7 +93,7 @@ func main() {
 
 	client := MQTT.NewClient(opts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		fmt.Println(token.Error())
+		slog.Any("error", token.Error())
 		os.Exit(1)
 	}
 
@@ -99,9 +105,9 @@ func main() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
 	// TODO Add a little REST API to get status
-	fmt.Println("Waiting for messages...")
+	slog.Info("Waiting for messages.")
 	<-c
-	fmt.Println("\nExiting gracefully...")
+	slog.Info("Exiting gracefully.")
 
 	client.Disconnect(250)
 }
@@ -168,7 +174,7 @@ func sub(client MQTT.Client) {
 	topic := "mostert/motion/#"
 	token := client.Subscribe(topic, 1, nil)
 	token.Wait()
-	fmt.Printf("Subscribed to topic: %s\n", topic)
+	slog.Info("Subscribed", "topic", topic)
 }
 
 func sendEmail(to, subject, body string) error {
@@ -233,6 +239,6 @@ func sendEmail(to, subject, body string) error {
 	// Close the connection
 	client.Quit()
 
-	fmt.Println("Email sent successfully")
+	slog.Info("Email sent successfully")
 	return nil
 }
