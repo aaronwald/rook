@@ -73,7 +73,7 @@ func main() {
 	gmail_username = strings.TrimSpace(string(dat))
 
 	dat2, err2 := os.ReadFile(CLI.GmailPasswordFile)
-	if err != nil {
+	if err2 != nil {
 		panic(err2)
 	}
 	gmail_password = strings.TrimSpace(string(dat2))
