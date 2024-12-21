@@ -55,23 +55,12 @@ var CLI struct {
 
 var context *Context
 
-// slog
-// https://github.com/avelino/awesome-go
-// https://gobyexample.com/
-
 func main() {
 	kong.Parse(&CLI)
 
 	slog.Info("mqtt", "mqtt_server", CLI.MqttHostname)
 
 	context = &Context{MessageCount: 0}
-	// mqtt_username := flag.String("username", "foo", "MQTT username")
-	// mqtt_password := flag.String("password", "bar", "MQTT password")
-	// mqtt_hostname := flag.String("mqtt_server", "homeassistant.local", "MQTT hostname")
-	// mqtt_port := flag.Int("mqtt_port", 1883, "MQTT port")
-	// gmail_username_file := flag.String("gmail_username_file", "gmail_username.txt", "Gmail username file")
-	// gmail_password_file := flag.String("gmail_password_file", "gmail_password.txt", "Gmail password file")
-	// flag.Parse()
 
 	slog.Info("mqtt", "mqtt_server", CLI.MqttHostname)
 	slog.Info("mqtt", "mqtt_port", CLI.MqttPort)
