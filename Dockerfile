@@ -7,4 +7,4 @@ RUN go build -o rook .
 
 FROM golang:1.23
 COPY --from=builder /app/rook /app/rook
-CMD ["/app/rook",  "-gmail_username_file", "/etc/gmail-secret/username", "-gmail_password_file", "/etc/gmail-secret/password", "-mqtt_server", "mqtt", "-username", "rook", "-password", "rook"]
+CMD ["/app/rook",  "--gmail-username-file", "/etc/gmail-secret/username", "--gmail-password-file", "/etc/gmail-secret/password", "--mqtt-server", "mqtt", "--mqtt-username", "rook", "--mqtt-password", "rook"]
