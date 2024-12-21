@@ -3,7 +3,6 @@ package main
 import (
 	"crypto/tls"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log"
 	"log/slog"
@@ -14,6 +13,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/alecthomas/kong"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gorilla/mux"
 )
@@ -44,6 +44,15 @@ type Context struct {
 	MessageCount int
 }
 
+var CLI struct {
+	MqttUsername      string `help:"MQTT username."`
+	MqttPassword      string `help:"MQTT password."`
+	MqttHostname      string `help:"MQTT hostname."`
+	MqttPort          int    `help:"MQTT port." default:"1883"`
+	GmailUsernameFile string `help:"Gmail username." optional:""`
+	GmailPasswordFile string `help:"Gmail password." optional:""`
+}
+
 var context *Context
 
 // slog
@@ -51,27 +60,31 @@ var context *Context
 // https://gobyexample.com/
 
 func main() {
+	kong.Parse(&CLI)
+
+	slog.Info("mqtt", "mqtt_server", CLI.MqttHostname)
+
 	context = &Context{MessageCount: 0}
-	username := flag.String("username", "foo", "MQTT username")
-	password := flag.String("password", "bar", "MQTT password")
-	mqtt_hostname := flag.String("mqtt_server", "homeassistant.local", "MQTT hostname")
-	mqtt_port := flag.Int("mqtt_port", 1883, "MQTT port")
-	gmail_username_file := flag.String("gmail_username_file", "gmail_username.txt", "Gmail username file")
-	gmail_password_file := flag.String("gmail_password_file", "gmail_password.txt", "Gmail password file")
-	flag.Parse()
+	// mqtt_username := flag.String("username", "foo", "MQTT username")
+	// mqtt_password := flag.String("password", "bar", "MQTT password")
+	// mqtt_hostname := flag.String("mqtt_server", "homeassistant.local", "MQTT hostname")
+	// mqtt_port := flag.Int("mqtt_port", 1883, "MQTT port")
+	// gmail_username_file := flag.String("gmail_username_file", "gmail_username.txt", "Gmail username file")
+	// gmail_password_file := flag.String("gmail_password_file", "gmail_password.txt", "Gmail password file")
+	// flag.Parse()
 
-	slog.Info("mqtt", "mqtt_server", *mqtt_hostname)
-	slog.Info("mqtt", "mqtt_port", *mqtt_port)
-	slog.Info("gmail", "gmail_username_file", *gmail_username_file)
-	slog.Info("gmail", "gmail_password_file", *gmail_password_file)
+	slog.Info("mqtt", "mqtt_server", CLI.MqttHostname)
+	slog.Info("mqtt", "mqtt_port", CLI.MqttPort)
+	slog.Info("gmail", "gmail_username_file", CLI.GmailUsernameFile)
+	slog.Info("gmail", "gmail_password_file", CLI.GmailPasswordFile)
 
-	dat, err := os.ReadFile(*gmail_username_file)
+	dat, err := os.ReadFile(CLI.GmailUsernameFile)
 	if err != nil {
 		panic(err)
 	}
 	gmail_username = strings.TrimSpace(string(dat))
 
-	dat2, err2 := os.ReadFile(*gmail_password_file)
+	dat2, err2 := os.ReadFile(CLI.GmailPasswordFile)
 	if err != nil {
 		panic(err2)
 	}
@@ -81,19 +94,19 @@ func main() {
 
 	hostname, err := os.Hostname()
 	if err != nil {
-		slog.Any("error", err)
+		slog.Error("Hostname", "error", err)
 		os.Exit(1)
 	}
 
-	opts := MQTT.NewClientOptions().AddBroker(fmt.Sprintf("tcp://%s:%d", *mqtt_hostname, *mqtt_port))
+	opts := MQTT.NewClientOptions().AddBroker(fmt.Sprintf("tcp://%s:%d", CLI.MqttHostname, CLI.MqttPort))
 	opts.SetClientID("rook_" + hostname)
 	opts.SetDefaultPublishHandler(messagePubHandler)
-	opts.SetUsername(*username)
-	opts.SetPassword(*password)
+	opts.SetUsername(CLI.MqttUsername)
+	opts.SetPassword(CLI.MqttPassword)
 
 	client := MQTT.NewClient(opts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		slog.Any("error", token.Error())
+		slog.Error("Mqtt", "connect", token.Error())
 		os.Exit(1)
 	}
 
