@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"log"
 	"log/slog"
 	"net/http"
 	"net/smtp"
@@ -139,8 +138,8 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 var messagePubHandler MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
-	log.Printf("DEBUG: TOPIC: %s\n", msg.Topic())
-	log.Printf("DEBUG: MSG: %s\n", msg.Payload())
+	slog.Debug("MQTT", "topic", msg.Topic())
+	slog.Debug("MQTT", "payload", string(msg.Payload()))
 	context.MessageCount++
 
 	// Parse the JSON payload
@@ -152,12 +151,10 @@ var messagePubHandler MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Me
 	}
 
 	// Use the parsed data
-	fmt.Printf("Parsed payload: %+v\n", payload)
-	fmt.Printf("\tMotion: %d\n", payload.Motion)
+	slog.Debug("Parsed payload", "payload", payload)
 
 	val, ok := motion_map[msg.Topic()]
 	if (ok && val != payload.Motion) || !ok {
-		fmt.Print("Send email\n")
 		body := "Motion detected"
 		if payload.Motion == 0 {
 			body = "Motion cleared"
