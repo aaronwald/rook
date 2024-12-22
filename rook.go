@@ -11,10 +11,12 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/alecthomas/kong"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gorilla/mux"
+	"github.com/lmittmann/tint"
 )
 
 var motion_map map[string]int
@@ -48,23 +50,36 @@ var CLI struct {
 	MqttPassword      string `help:"MQTT password."`
 	MqttHostname      string `help:"MQTT hostname."`
 	MqttPort          int    `help:"MQTT port." default:"1883"`
-	GmailUsernameFile string `help:"Gmail username." optional:""`
-	GmailPasswordFile string `help:"Gmail password." optional:""`
+	GmailUsernameFile string `help:"Gmail username." default:"gmail_username.txt"`
+	GmailPasswordFile string `help:"Gmail password." default:"gmail_password.txt"`
 }
 
 var context *Context
 
 func main() {
+	// set global logger with custom options
+	slog.SetDefault(slog.New(
+		tint.NewHandler(os.Stderr, &tint.Options{
+			Level:      slog.LevelDebug,
+			TimeFormat: time.Kitchen,
+		}),
+	))
+
 	kong.Parse(&CLI)
 
 	slog.Info("mqtt", "mqtt_server", CLI.MqttHostname)
-
-	context = &Context{MessageCount: 0}
-
-	slog.Info("mqtt", "mqtt_server", CLI.MqttHostname)
+	slog.Info("mqtt", "mqtt_usernane", CLI.MqttUsername)
+	if CLI.MqttPassword == "" {
+		slog.Error("mqtt", "mqtt_password", "Not set")
+	}
 	slog.Info("mqtt", "mqtt_port", CLI.MqttPort)
 	slog.Info("gmail", "gmail_username_file", CLI.GmailUsernameFile)
 	slog.Info("gmail", "gmail_password_file", CLI.GmailPasswordFile)
+
+	if CLI.MqttHostname == "" || CLI.MqttUsername == "" || CLI.MqttPassword == "" {
+		panic("Missing params")
+	}
+	context = &Context{MessageCount: 0}
 
 	dat, err := os.ReadFile(CLI.GmailUsernameFile)
 	if err != nil {
