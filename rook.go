@@ -21,11 +21,12 @@ import (
 )
 
 var (
-	http_addr      string
-	motion_map     map[string]int
-	gmail_password string
-	gmail_username string
-	upgrader       = websocket.Upgrader{}
+	http_addr       string
+	motion_map      map[string]int
+	gmail_password  string
+	gmail_username  string
+	upgrader        = websocket.Upgrader{}
+	shutdownChannel = make(chan struct{})
 )
 
 // Define a struct that matches the JSON payload structure
@@ -43,7 +44,8 @@ type Payload struct {
 }
 
 type Status struct {
-	Status string `json:"status"`
+	Status       string `json:"status"`
+	MessageCount int    `json:"message_count"`
 }
 
 type Context struct {
@@ -132,6 +134,7 @@ func main() {
 	slog.Info("Waiting for messages.")
 	<-c
 	slog.Info("Exiting gracefully.")
+	// shutdownChannel <- struct{}{}
 
 	client.Disconnect(250)
 }
@@ -145,6 +148,7 @@ func serveWs(w http.ResponseWriter, r *http.Request) {
 
 	var status Status
 	status.Status = "ok"
+	status.MessageCount = context.MessageCount
 
 	ws.WriteJSON(status)
 
