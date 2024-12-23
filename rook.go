@@ -16,12 +16,17 @@ import (
 	"github.com/alecthomas/kong"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 	"github.com/lmittmann/tint"
 )
 
-var motion_map map[string]int
-var gmail_password string
-var gmail_username string
+var (
+	http_addr      string
+	motion_map     map[string]int
+	gmail_password string
+	gmail_username string
+	upgrader       = websocket.Upgrader{}
+)
 
 // Define a struct that matches the JSON payload structure
 // {"encryption":false,"BTHome_version":2,"pid":198,"Battery":100,"Illuminance":0,"Motion":1,"addr":"e8:e0:7e:a6:ac:db","rssi":-56}
@@ -52,6 +57,7 @@ var CLI struct {
 	MqttPort          int    `help:"MQTT port." default:"1883"`
 	GmailUsernameFile string `help:"Gmail username." default:"gmail_username.txt"`
 	GmailPasswordFile string `help:"Gmail password." default:"gmail_password.txt"`
+	HttpAddr          string `help:"HTTP address." default:":8080"`
 }
 
 var context *Context
@@ -75,6 +81,8 @@ func main() {
 	slog.Info("mqtt", "mqtt_port", CLI.MqttPort)
 	slog.Info("gmail", "gmail_username_file", CLI.GmailUsernameFile)
 	slog.Info("gmail", "gmail_password_file", CLI.GmailPasswordFile)
+	slog.Info("http", "http_addr", CLI.HttpAddr)
+	http_addr = CLI.HttpAddr
 
 	if CLI.MqttHostname == "" || CLI.MqttUsername == "" || CLI.MqttPassword == "" {
 		panic("Missing params")
@@ -128,13 +136,29 @@ func main() {
 	client.Disconnect(250)
 }
 
+func serveWs(w http.ResponseWriter, r *http.Request) {
+	ws, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		slog.Error("serveWs", "upgrade:", err)
+		return
+	}
+
+	var status Status
+	status.Status = "ok"
+
+	ws.WriteJSON(status)
+
+	defer ws.Close()
+}
+
 func startHTTPServer() {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/status", statusHandler).Methods("GET")
 	r.HandleFunc("/", indexHandler).Methods("GET")
+	r.HandleFunc("/ws", serveWs)
 	http.Handle("/", r)
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(http_addr, nil)
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
