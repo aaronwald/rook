@@ -25,7 +25,7 @@ var (
 	motion_map      map[string]int
 	gmail_password  string
 	gmail_username  string
-	upgrader        = websocket.Upgrader{}
+	upgrader        = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
 	shutdownChannel = make(chan struct{})
 )
 
@@ -141,6 +141,7 @@ func main() {
 
 func serveWs(w http.ResponseWriter, r *http.Request) {
 	ws, err := upgrader.Upgrade(w, r, nil)
+
 	if err != nil {
 		slog.Error("serveWs", "upgrade:", err)
 		return
@@ -150,9 +151,24 @@ func serveWs(w http.ResponseWriter, r *http.Request) {
 	status.Status = "ok"
 	status.MessageCount = context.MessageCount
 
-	ws.WriteJSON(status)
-
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
 	defer ws.Close()
+
+	for {
+		select {
+		case <-ticker.C:
+			slog.Info("serveWS", "ws", "write msg")
+			if err := ws.WriteJSON(status); err != nil {
+				slog.Error("serveWs", "ping:", err)
+				shutdownChannel <- struct{}{}
+			}
+		case <-shutdownChannel:
+			slog.Info("serveWS", "ws", "shutdown")
+			return
+		}
+	}
+
 }
 
 func startHTTPServer() {
