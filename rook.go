@@ -149,7 +149,6 @@ func serveWs(w http.ResponseWriter, r *http.Request) {
 
 	var status Status
 	status.Status = "ok"
-	status.MessageCount = context.MessageCount
 
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
@@ -159,9 +158,13 @@ func serveWs(w http.ResponseWriter, r *http.Request) {
 		select {
 		case <-ticker.C:
 			slog.Info("serveWS", "ws", "write msg")
+			status.MessageCount = context.MessageCount
+			context.MessageCount++
+
 			if err := ws.WriteJSON(status); err != nil {
 				slog.Error("serveWs", "ping:", err)
-				shutdownChannel <- struct{}{}
+				// shutdownChannel <- struct{}{}
+				return
 			}
 		case <-shutdownChannel:
 			slog.Info("serveWS", "ws", "shutdown")
