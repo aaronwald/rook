@@ -159,7 +159,7 @@ func serveWs(w http.ResponseWriter, r *http.Request) {
 		case <-ticker.C:
 			slog.Info("serveWS", "ws", "write msg")
 			status.MessageCount = context.MessageCount
-			context.MessageCount++
+			// context.MessageCount++
 
 			if err := ws.WriteJSON(status); err != nil {
 				slog.Error("serveWs", "ping:", err)
