@@ -162,7 +162,7 @@ func serveWs(w http.ResponseWriter, r *http.Request) {
 			// context.MessageCount++
 
 			if err := ws.WriteJSON(status); err != nil {
-				slog.Error("serveWs", "ping:", err)
+				slog.Error("serveWs", "WriteJSON:", err)
 				// shutdownChannel <- struct{}{}
 				return
 			}
@@ -170,8 +170,7 @@ func serveWs(w http.ResponseWriter, r *http.Request) {
 			slog.Info("serveWS", "ws", "shutdown")
 			return
 		}
-	}
-
+	}2
 }
 
 func startHTTPServer() {
