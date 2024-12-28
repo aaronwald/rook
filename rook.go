@@ -170,7 +170,7 @@ func serveWs(w http.ResponseWriter, r *http.Request) {
 			slog.Info("serveWS", "ws", "shutdown")
 			return
 		}
-	}2
+	}
 }
 
 func startHTTPServer() {
