@@ -140,6 +140,7 @@ func main() {
 }
 
 func serveWs(w http.ResponseWriter, r *http.Request) {
+	slog.Info("serveWs", "ws", "upgrade")
 	ws, err := upgrader.Upgrade(w, r, nil)
 
 	if err != nil {
